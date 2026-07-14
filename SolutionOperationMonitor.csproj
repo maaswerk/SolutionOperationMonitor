@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>SolutionOperationMonitor</RootNamespace>
+    <AssemblyName>SolutionOperationMonitor</AssemblyName>
+    <Version>1.0.0.0</Version>
+    <Company>Fabian Maas</Company>
+    <Product>Solution Operation Monitor</Product>
+    <Description>Live progress monitoring for solution import / upgrade / uninstall including percentage, ETA, progress chart and the full solution history at a glance.</Description>
+    <!-- Erlaubt das Bauen auf Nicht-Windows-Maschinen (CI); in Visual Studio irrelevant -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Bringt XrmToolBox.Extensibility, McTools.Xrm.Connection und die Dataverse SDK Assemblies mit -->
+    <PackageReference Include="XrmToolBoxPackage" Version="1.2024.12.70" />
+  </ItemGroup>
+
+  <!-- Optional: DLL nach dem Build direkt in den XrmToolBox-Plugin-Ordner kopieren (nur Debug) -->
+  <Target Name="CopyToXrmToolBox" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' AND '$(OS)' == 'Windows_NT'">
+    <Copy SourceFiles="$(TargetPath)"
+          DestinationFolder="$(APPDATA)\MscrmTools\XrmToolBox\Plugins"
+          ContinueOnError="true" />
+  </Target>
+
+</Project>

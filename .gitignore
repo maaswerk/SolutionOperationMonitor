@@ -1,0 +1,19 @@
+## Build-Ergebnisse
+[Bb]in/
+[Oo]bj/
+*.dll
+*.pdb
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+
+## Rider / VS Code
+.idea/
+*.DotSettings.user
+.vscode/
+
+## OS
+.DS_Store
+Thumbs.db
