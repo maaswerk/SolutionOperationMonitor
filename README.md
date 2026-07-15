@@ -2,6 +2,10 @@
 
 Zeigt live den Status laufender Solution-Vorgänge (Import / Upgrade / Uninstall) in einer Dataverse-Umgebung – inkl. Fortschritt in %, verstrichener Zeit und geschätzter Restzeit – sowie die komplette Solution History auf einen Blick.
 
+## Features (v1.1.0)
+
+- **Light & Dark Mode**: Umschalter „Design“ in der Toolbar (Hell / Dunkel). Beim Start wird automatisch der Windows-App-Modus erkannt (`AppsUseLightTheme`), fällt bei fehlendem Registry-Zugriff auf Hell zurück. Alle Bereiche sind durchgängig eingefärbt: Toolbar/Menüs (eigener `ToolStripRenderer`), Karten, Fortschritts-Diagramm, History-Grid inkl. Kopf-, Auswahl- und Statusfarben (aktiv/Fehler). Der Wechsel ist ohne aktive Verbindung möglich und wirkt sofort auf bereits geladene Daten.
+
 ## Features (v1.2)
 
 - **Zeitverlaufs-Diagramm pro aktivem Vorgang**: unter dem Fortschrittsbalken zeigt ein Mini-Chart
@@ -73,9 +77,36 @@ Der verbundene Benutzer braucht Leserechte auf:
 - `msdyn_solutionhistory` (Solution History)
 - `importjob` (Import Job) – optional; ohne diese Rechte funktioniert alles außer der exakten Import-Prozentanzeige
 
+## XrmToolBox Tool Library – Validierungs-Checkliste
+
+Der Stand gegenüber der offiziellen Checkliste (https://www.xrmtoolbox.com/documentation/for-users/tool-library/):
+
+**NuGet-Paket**
+
+| Punkt | Status | Umsetzung |
+|---|---|---|
+| Icon-URL | ✅ | `PackageIcon` (eingebettet) + `PackageIconUrl` in `SolutionOperationMonitor.csproj` |
+| Project-URL | ✅ | `PackageProjectUrl` in der `.csproj` |
+| Tool-DLL im Ordner `Plugins` | ✅ | `IncludeBuildOutput=false` + `None … PackagePath="Plugins"` – die DLL landet im Paket unter `Plugins/` |
+| Paket-Version == Tool-Version | ✅ | `Version=1.1.0` (.csproj) == `AssemblyVersion 1.1.0.0` (`src/AssemblyInfo.cs`) |
+
+> Hinweis: Der Paket-Tag **`XrmToolBox`** ist gesetzt – er ist Voraussetzung, damit die Tool Library das Paket überhaupt findet. Paket erzeugen mit `dotnet pack -c Release` (oder in Visual Studio „Pack“).
+
+**Tool**
+
+| Punkt | Status | Umsetzung |
+|---|---|---|
+| Bild für „Large“-Anzeige | ✅ | `BigImageBase64` (80×80) in `SolutionOperationMonitorPlugin.cs` |
+| Bild für „Small“-Anzeige | ✅ | `SmallImageBase64` (32×32) in `SolutionOperationMonitorPlugin.cs` |
+| Controls passen sich der Fenstergröße an | ✅ | `Dock`/`Anchor`, `SplitContainer`, `FlowLayoutPanel` + `Resize`-Handler skalieren Karten und Diagramm |
+| Tool ohne Verbindung öffenbar | ✅ | `PluginControlBase`; `OnLoad` lädt nur bei `Service != null` |
+| Controls ohne Verbindung nutzbar | ✅ | Design-/Sprach-/Filter-/Intervall-Controls arbeiten rein lokal, Auto-Refresh ist per `Service != null` abgesichert |
+| Verbindungsdialog bei verbindungspflichtigen Aktionen | ✅ | „Aktualisieren“ läuft über `ExecuteMethod(...)`, das bei fehlender Verbindung den Auswahldialog öffnet |
+| Controls mit Verbindung fehlerfrei | ✅ | Abfragen mit try/catch (z. B. `importjob` ohne Leserechte) |
+| Lang laufende Vorgänge asynchron | ✅ | `WorkAsync(...)` bzw. `Task.Run(...)` – die Haupt-App friert nicht ein |
+
 ## Mögliche Erweiterungen
 
-- Icons (SmallImageBase64 / BigImageBase64) in `SolutionOperationMonitorPlugin.cs` ergänzen (32×32 bzw. 80×80 px als Base64)
 - Windows-Toast-Notification bei Abschluss (XrmToolBox unterstützt das: `Use Windows Toast Notification` in der Doku)
 - Parsing der `importjob.data`-XML für Fortschritt **pro Komponente**
-- Veröffentlichung in der XrmToolBox Tool Library (NuGet-Paket nach deren Namenskonvention)
+- „System“-Option für automatisches Umschalten des Designs bei Änderung des Windows-Modus zur Laufzeit

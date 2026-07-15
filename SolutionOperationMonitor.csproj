@@ -6,10 +6,34 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>SolutionOperationMonitor</RootNamespace>
     <AssemblyName>SolutionOperationMonitor</AssemblyName>
-    <Version>1.0.0.0</Version>
+
+    <!-- Assembly-Version wird ausschließlich in src/AssemblyInfo.cs gepflegt -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+
+    <!-- ================= NuGet-Paket-Metadaten (XrmToolBox Tool Library) ================= -->
+    <PackageId>SolutionOperationMonitor</PackageId>
+    <!-- Paket-Version = Tool-Version (siehe AssemblyVersion in src/AssemblyInfo.cs) -->
+    <Version>1.1.0</Version>
+    <Authors>Fabian Maas</Authors>
     <Company>Fabian Maas</Company>
     <Product>Solution Operation Monitor</Product>
-    <Description>Live progress monitoring for solution import / upgrade / uninstall including percentage, ETA, progress chart and the full solution history at a glance.</Description>
+    <Description>Live progress monitoring for solution import / upgrade / uninstall including percentage, ETA, progress chart and the full solution history at a glance. Supports light and dark mode.</Description>
+    <Copyright>Copyright © 2026 Fabian Maas</Copyright>
+    <!-- Der Tag "XrmToolBox" ist Voraussetzung, damit die Tool Library das Paket findet -->
+    <PackageTags>XrmToolBox;Dataverse;Dynamics365;PowerPlatform;Solution;Import;Upgrade;Monitoring</PackageTags>
+    <PackageProjectUrl>https://github.com/maaswerk/solutionoperationmonitor</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/maaswerk/solutionoperationmonitor</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <!-- Icon: eingebettet (modernes NuGet) + URL (von der Tool-Library-Validierung geprüft) -->
+    <PackageIcon>icon-80.png</PackageIcon>
+    <PackageIconUrl>https://raw.githubusercontent.com/maaswerk/solutionoperationmonitor/main/assets/icon-80.png</PackageIconUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <!-- NU5048: PackageIcon + PackageIconUrl gleichzeitig ist gewollt (Rückwärtskompatibilität) -->
+    <NoWarn>$(NoWarn);NU5048</NoWarn>
+
+    <!-- Die Tool-DLL muss im Paket unter "Plugins" liegen -> Standard-Build-Output (lib) unterdrücken -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+
     <!-- Erlaubt das Bauen auf Nicht-Windows-Maschinen (CI); in Visual Studio irrelevant -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -18,6 +42,14 @@
   <ItemGroup>
     <!-- Bringt XrmToolBox.Extensibility, McTools.Xrm.Connection und die Dataverse SDK Assemblies mit -->
     <PackageReference Include="XrmToolBoxPackage" Version="1.2024.12.70" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Paket-Icon und README ins Paket-Root aufnehmen -->
+    <None Include="assets\icon-80.png" Pack="true" PackagePath="" Visible="false" />
+    <None Include="README.md" Pack="true" PackagePath="" Visible="false" />
+    <!-- Gebaute Tool-DLL unter "Plugins" ins NuGet-Paket legen (Tool-Library-Vorgabe) -->
+    <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="Plugins" Visible="false" />
   </ItemGroup>
 
   <!-- Optional: DLL nach dem Build direkt in den XrmToolBox-Plugin-Ordner kopieren (nur Debug) -->

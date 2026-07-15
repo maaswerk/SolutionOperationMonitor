@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Win32;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
 using XrmToolBox.Extensibility;
@@ -31,6 +32,9 @@ namespace SolutionOperationMonitor
             { "Interval",         new[] { "Intervall:", "Interval:" } },
             { "Filter",           new[] { "Filter:", "Filter:" } },
             { "Language",         new[] { "Sprache", "Language" } },
+            { "Theme",            new[] { "Design", "Theme" } },
+            { "ThemeLight",       new[] { "Hell", "Light" } },
+            { "ThemeDark",        new[] { "Dunkel", "Dark" } },
             { "LastRefresh",      new[] { "Zuletzt aktualisiert: {0}", "Last refreshed: {0}" } },
             { "ActiveHeader",     new[] { "Aktive Solution-Vorgänge", "Active solution operations" } },
             { "HistoryHeader",    new[] { "Solution History (letzte 200 Vorgänge, max. 180 Tage rückwirkend)", "Solution history (last 200 operations, max. 180 days back)" } },
@@ -84,6 +88,256 @@ namespace SolutionOperationMonitor
 
     #endregion
 
+    #region Theme (Light / Dark)
+
+    internal enum ThemeMode { Light, Dark }
+
+    /// <summary>Farbpalette für einen Modus. Alle Farben des Tools werden hierüber bezogen.</summary>
+    internal sealed class ThemePalette
+    {
+        public Color AppBackground;
+        public Color PanelBackground;
+        public Color HeaderText;
+
+        public Color CardBackground;
+        public Color PrimaryText;
+        public Color SecondaryText;
+        public Color MutedText;
+
+        public Color ToolStripBackground;
+        public Color ToolStripText;
+        public Color ToolStripHover;
+        public Color ToolStripBorder;
+
+        public Color GridBackground;
+        public Color GridCellBackground;
+        public Color GridCellText;
+        public Color GridHeaderBackground;
+        public Color GridHeaderText;
+        public Color GridLines;
+        public Color GridSelectionBackground;
+        public Color GridSelectionText;
+        public Color RowActive;
+        public Color RowError;
+
+        public Color ChartBackground;
+        public Color ChartAxis;
+        public Color ChartGrid;
+        public Color ChartLabel;
+        public Color ChartActual;
+        public Color ChartProjection;
+        public Color ChartAvg;
+        public Color ChartNow;
+        public Color ChartNowText;
+        public Color ChartEtaText;
+
+        public Color EtaGood;
+        public Color EtaWarn;
+        public Color EtaNeutral;
+    }
+
+    /// <summary>Zentraler, statischer Theme-Zustand. Die Controls lesen <see cref="Current"/> beim (Neu-)Zeichnen.</summary>
+    internal static class Theme
+    {
+        public static ThemeMode Mode { get; private set; }
+        public static ThemePalette Current { get; private set; }
+
+        private static readonly ThemePalette LightPalette = new ThemePalette
+        {
+            AppBackground = Color.FromArgb(240, 244, 255),
+            PanelBackground = Color.FromArgb(240, 244, 255),
+            HeaderText = Color.FromArgb(27, 42, 74),
+
+            CardBackground = Color.FromArgb(248, 250, 255),
+            PrimaryText = Color.FromArgb(27, 42, 74),
+            SecondaryText = Color.FromArgb(90, 107, 140),
+            MutedText = Color.Gray,
+
+            ToolStripBackground = Color.FromArgb(248, 250, 255),
+            ToolStripText = Color.FromArgb(27, 42, 74),
+            ToolStripHover = Color.FromArgb(210, 222, 248),
+            ToolStripBorder = Color.FromArgb(210, 218, 235),
+
+            GridBackground = Color.FromArgb(250, 251, 255),
+            GridCellBackground = Color.White,
+            GridCellText = Color.FromArgb(27, 42, 74),
+            GridHeaderBackground = Color.FromArgb(230, 236, 250),
+            GridHeaderText = Color.FromArgb(27, 42, 74),
+            GridLines = Color.FromArgb(225, 230, 240),
+            GridSelectionBackground = Color.FromArgb(63, 106, 216),
+            GridSelectionText = Color.White,
+            RowActive = Color.FromArgb(255, 250, 220),
+            RowError = Color.FromArgb(255, 230, 230),
+
+            ChartBackground = Color.White,
+            ChartAxis = Color.FromArgb(200, 205, 215),
+            ChartGrid = Color.FromArgb(235, 238, 244),
+            ChartLabel = Color.FromArgb(110, 118, 135),
+            ChartActual = Color.FromArgb(63, 106, 216),
+            ChartProjection = Color.FromArgb(34, 150, 83),
+            ChartAvg = Color.FromArgb(165, 172, 188),
+            ChartNow = Color.FromArgb(235, 140, 30),
+            ChartNowText = Color.FromArgb(200, 110, 10),
+            ChartEtaText = Color.FromArgb(25, 120, 65),
+
+            EtaGood = Color.DarkGreen,
+            EtaWarn = Color.DarkOrange,
+            EtaNeutral = Color.Gray
+        };
+
+        private static readonly ThemePalette DarkPalette = new ThemePalette
+        {
+            AppBackground = Color.FromArgb(30, 32, 38),
+            PanelBackground = Color.FromArgb(30, 32, 38),
+            HeaderText = Color.FromArgb(225, 231, 245),
+
+            CardBackground = Color.FromArgb(42, 45, 53),
+            PrimaryText = Color.FromArgb(226, 232, 245),
+            SecondaryText = Color.FromArgb(160, 170, 190),
+            MutedText = Color.FromArgb(140, 148, 165),
+
+            ToolStripBackground = Color.FromArgb(37, 40, 47),
+            ToolStripText = Color.FromArgb(226, 232, 245),
+            ToolStripHover = Color.FromArgb(58, 63, 74),
+            ToolStripBorder = Color.FromArgb(64, 68, 78),
+
+            GridBackground = Color.FromArgb(37, 40, 47),
+            GridCellBackground = Color.FromArgb(42, 45, 53),
+            GridCellText = Color.FromArgb(226, 232, 245),
+            GridHeaderBackground = Color.FromArgb(50, 54, 63),
+            GridHeaderText = Color.FromArgb(226, 232, 245),
+            GridLines = Color.FromArgb(60, 64, 74),
+            GridSelectionBackground = Color.FromArgb(56, 92, 170),
+            GridSelectionText = Color.White,
+            RowActive = Color.FromArgb(74, 66, 30),
+            RowError = Color.FromArgb(86, 46, 46),
+
+            ChartBackground = Color.FromArgb(42, 45, 53),
+            ChartAxis = Color.FromArgb(96, 102, 116),
+            ChartGrid = Color.FromArgb(58, 62, 72),
+            ChartLabel = Color.FromArgb(168, 176, 194),
+            ChartActual = Color.FromArgb(96, 148, 255),
+            ChartProjection = Color.FromArgb(72, 200, 120),
+            ChartAvg = Color.FromArgb(120, 128, 148),
+            ChartNow = Color.FromArgb(240, 160, 60),
+            ChartNowText = Color.FromArgb(240, 170, 80),
+            ChartEtaText = Color.FromArgb(96, 210, 140),
+
+            EtaGood = Color.FromArgb(96, 210, 140),
+            EtaWarn = Color.FromArgb(240, 176, 80),
+            EtaNeutral = Color.FromArgb(160, 170, 190)
+        };
+
+        static Theme()
+        {
+            Mode = ThemeMode.Light;
+            Current = LightPalette;
+        }
+
+        public static void Set(ThemeMode mode)
+        {
+            Mode = mode;
+            Current = mode == ThemeMode.Dark ? DarkPalette : LightPalette;
+        }
+
+        /// <summary>Windows-App-Modus auslesen (0 = Dark). Fällt bei fehlendem Registry-Zugriff auf Light zurück.</summary>
+        public static ThemeMode DetectSystem()
+        {
+            try
+            {
+                using (var key = Registry.CurrentUser.OpenSubKey(
+                    @"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"))
+                {
+                    var value = key?.GetValue("AppsUseLightTheme");
+                    if (value is int i && i == 0) return ThemeMode.Dark;
+                }
+            }
+            catch { /* Registry nicht lesbar -> Light */ }
+            return ThemeMode.Light;
+        }
+    }
+
+    /// <summary>ProfessionalColorTable, die Toolbar/Menü-Farben aus der aktiven Palette bezieht.</summary>
+    internal sealed class ThemeColorTable : ProfessionalColorTable
+    {
+        private readonly ThemePalette _p;
+
+        public ThemeColorTable(ThemePalette p)
+        {
+            _p = p;
+            UseSystemColors = false;
+        }
+
+        public override Color ToolStripGradientBegin => _p.ToolStripBackground;
+        public override Color ToolStripGradientMiddle => _p.ToolStripBackground;
+        public override Color ToolStripGradientEnd => _p.ToolStripBackground;
+        public override Color ToolStripContentPanelGradientBegin => _p.ToolStripBackground;
+        public override Color ToolStripContentPanelGradientEnd => _p.ToolStripBackground;
+        public override Color ToolStripPanelGradientBegin => _p.ToolStripBackground;
+        public override Color ToolStripPanelGradientEnd => _p.ToolStripBackground;
+        public override Color ToolStripBorder => _p.ToolStripBorder;
+        public override Color MenuStripGradientBegin => _p.ToolStripBackground;
+        public override Color MenuStripGradientEnd => _p.ToolStripBackground;
+
+        public override Color ImageMarginGradientBegin => _p.ToolStripBackground;
+        public override Color ImageMarginGradientMiddle => _p.ToolStripBackground;
+        public override Color ImageMarginGradientEnd => _p.ToolStripBackground;
+
+        public override Color ButtonSelectedGradientBegin => _p.ToolStripHover;
+        public override Color ButtonSelectedGradientMiddle => _p.ToolStripHover;
+        public override Color ButtonSelectedGradientEnd => _p.ToolStripHover;
+        public override Color ButtonSelectedHighlight => _p.ToolStripHover;
+        public override Color ButtonSelectedBorder => _p.ToolStripBorder;
+        public override Color ButtonPressedGradientBegin => _p.ToolStripHover;
+        public override Color ButtonPressedGradientMiddle => _p.ToolStripHover;
+        public override Color ButtonPressedGradientEnd => _p.ToolStripHover;
+        public override Color ButtonCheckedGradientBegin => _p.ToolStripHover;
+        public override Color ButtonCheckedGradientMiddle => _p.ToolStripHover;
+        public override Color ButtonCheckedGradientEnd => _p.ToolStripHover;
+        public override Color ButtonCheckedHighlight => _p.ToolStripHover;
+
+        public override Color MenuItemSelected => _p.ToolStripHover;
+        public override Color MenuItemSelectedGradientBegin => _p.ToolStripHover;
+        public override Color MenuItemSelectedGradientEnd => _p.ToolStripHover;
+        public override Color MenuItemPressedGradientBegin => _p.ToolStripBackground;
+        public override Color MenuItemPressedGradientMiddle => _p.ToolStripBackground;
+        public override Color MenuItemPressedGradientEnd => _p.ToolStripBackground;
+        public override Color MenuItemBorder => _p.ToolStripBorder;
+        public override Color MenuBorder => _p.ToolStripBorder;
+        public override Color ToolStripDropDownBackground => _p.ToolStripBackground;
+
+        public override Color SeparatorDark => _p.ToolStripBorder;
+        public override Color SeparatorLight => _p.ToolStripBorder;
+        public override Color GripDark => _p.ToolStripBorder;
+        public override Color GripLight => _p.ToolStripBorder;
+    }
+
+    /// <summary>Renderer, der zusätzlich Text- und Pfeilfarbe der Toolbar an die Palette anpasst.</summary>
+    internal sealed class ThemedToolStripRenderer : ToolStripProfessionalRenderer
+    {
+        private readonly ThemePalette _p;
+
+        public ThemedToolStripRenderer(ThemePalette p) : base(new ThemeColorTable(p))
+        {
+            _p = p;
+            RoundedEdges = false;
+        }
+
+        protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
+        {
+            e.TextColor = _p.ToolStripText;
+            base.OnRenderItemText(e);
+        }
+
+        protected override void OnRenderArrow(ToolStripArrowRenderEventArgs e)
+        {
+            e.ArrowColor = _p.ToolStripText;
+            base.OnRenderArrow(e);
+        }
+    }
+
+    #endregion
+
     #region Zeitverlaufs-Diagramm (Ist vs. Prognose vs. Historie)
 
     internal class ChartModel
@@ -109,7 +363,7 @@ namespace SolutionOperationMonitor
         public ProgressChart()
         {
             DoubleBuffered = true;
-            BackColor = Color.White;
+            BackColor = Theme.Current.ChartBackground;
             BorderStyle = BorderStyle.None;
             Resize += (s, e) => Invalidate();
         }
@@ -127,13 +381,14 @@ namespace SolutionOperationMonitor
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
+            var p = Theme.Current;
             var m = _model;
             var plot = new Rectangle(36, 6, Width - 44, Height - 24);
             if (plot.Width < 60 || plot.Height < 30) return;
 
-            using (var axisPen = new Pen(Color.FromArgb(200, 205, 215)))
-            using (var gridPen = new Pen(Color.FromArgb(235, 238, 244)))
-            using (var labelBrush = new SolidBrush(Color.FromArgb(110, 118, 135)))
+            using (var axisPen = new Pen(p.ChartAxis))
+            using (var gridPen = new Pen(p.ChartGrid))
+            using (var labelBrush = new SolidBrush(p.ChartLabel))
             using (var labelFont = new Font(Font.FontFamily, 7f))
             {
                 // Y-Grid: 0 / 25 / 50 / 75 / 100 %
@@ -168,7 +423,7 @@ namespace SolutionOperationMonitor
                 // Ø-Referenzlinie aus der Historie (0 % -> 100 % über die Durchschnittsdauer)
                 if (m.AvgSeconds.HasValue && m.AvgSeconds.Value > 0)
                 {
-                    using (var avgPen = new Pen(Color.FromArgb(165, 172, 188), 1.4f) { DashStyle = DashStyle.Dot })
+                    using (var avgPen = new Pen(p.ChartAvg, 1.4f) { DashStyle = DashStyle.Dot })
                     {
                         g.DrawLine(avgPen, X(0), Y(0), X(m.AvgSeconds.Value), Y(100));
                     }
@@ -184,12 +439,15 @@ namespace SolutionOperationMonitor
                         .Select(s => new PointF(X(s.X), Y(s.Y)))
                         .ToArray();
 
-                    using (var actualPen = new Pen(Color.FromArgb(63, 106, 216), 2.2f)
+                    using (var actualPen = new Pen(p.ChartActual, 2.2f)
                         { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round })
                     {
                         if (pts.Length == 1)
                         {
-                            g.FillEllipse(Brushes.RoyalBlue, pts[0].X - 2.5f, pts[0].Y - 2.5f, 5, 5);
+                            using (var dot = new SolidBrush(p.ChartActual))
+                            {
+                                g.FillEllipse(dot, pts[0].X - 2.5f, pts[0].Y - 2.5f, 5, 5);
+                            }
                         }
                         else
                         {
@@ -204,7 +462,7 @@ namespace SolutionOperationMonitor
                 else if (m.AvgSeconds.HasValue && m.CurrentPercent.HasValue)
                 {
                     // Uninstall/Upgrade ohne Prozentwert: geschätzter Verlauf bis "jetzt"
-                    using (var estPen = new Pen(Color.FromArgb(63, 106, 216), 2.2f) { DashStyle = DashStyle.Dash })
+                    using (var estPen = new Pen(p.ChartActual, 2.2f) { DashStyle = DashStyle.Dash })
                     {
                         g.DrawLine(estPen, X(0), Y(0), X(m.ElapsedSeconds), Y(m.CurrentPercent.Value));
                     }
@@ -216,18 +474,19 @@ namespace SolutionOperationMonitor
                 // Prognose-Linie vom letzten Punkt bis 100 %
                 if (haveLast && m.RemainingSeconds.HasValue && lastY < 100)
                 {
-                    using (var projPen = new Pen(Color.FromArgb(34, 150, 83), 2f) { DashStyle = DashStyle.Dash })
+                    using (var projPen = new Pen(p.ChartProjection, 2f) { DashStyle = DashStyle.Dash })
                     {
                         g.DrawLine(projPen, X(lastX), Y(lastY), X(m.ElapsedSeconds + m.RemainingSeconds.Value), Y(100));
                     }
                 }
 
                 // "jetzt"-Marker
-                using (var nowPen = new Pen(Color.FromArgb(235, 140, 30), 1.6f))
+                using (var nowPen = new Pen(p.ChartNow, 1.6f))
+                using (var nowBrush = new SolidBrush(p.ChartNowText))
                 {
                     var nx = X(m.ElapsedSeconds);
                     g.DrawLine(nowPen, nx, plot.Top, nx, plot.Bottom);
-                    g.DrawString(I18n.T("ChartNow"), labelFont, new SolidBrush(Color.FromArgb(200, 110, 10)),
+                    g.DrawString(I18n.T("ChartNow"), labelFont, nowBrush,
                         Math.Min(nx + 2, plot.Right - 30), plot.Top);
                 }
 
@@ -236,7 +495,7 @@ namespace SolutionOperationMonitor
                 {
                     var etaSec = m.ElapsedSeconds + m.RemainingSeconds.Value;
                     var ex = X(etaSec);
-                    using (var etaPen = new Pen(Color.FromArgb(34, 150, 83), 1.6f) { DashStyle = DashStyle.Dash })
+                    using (var etaPen = new Pen(p.ChartProjection, 1.6f) { DashStyle = DashStyle.Dash })
                     {
                         g.DrawLine(etaPen, ex, plot.Top, ex, plot.Bottom);
                     }
@@ -244,16 +503,18 @@ namespace SolutionOperationMonitor
                     var etaLabel = I18n.F("ChartEta", etaClock);
                     var size = g.MeasureString(etaLabel, labelFont);
                     var lx = Math.Max(plot.Left, Math.Min(ex - size.Width / 2, plot.Right - size.Width));
-                    g.DrawString(etaLabel, labelFont, new SolidBrush(Color.FromArgb(25, 120, 65)),
-                        lx, plot.Bottom + 3);
+                    using (var etaBrush = new SolidBrush(p.ChartEtaText))
+                    {
+                        g.DrawString(etaLabel, labelFont, etaBrush, lx, plot.Bottom + 3);
+                    }
                 }
 
                 // Mini-Legende oben links im Plot
                 float lyy = plot.Top + 2;
                 float lxx = plot.Left + 6;
-                using (var actualPen = new Pen(Color.FromArgb(63, 106, 216), 2f))
-                using (var projPen = new Pen(Color.FromArgb(34, 150, 83), 2f) { DashStyle = DashStyle.Dash })
-                using (var avgPen = new Pen(Color.FromArgb(165, 172, 188), 1.4f) { DashStyle = DashStyle.Dot })
+                using (var actualPen = new Pen(p.ChartActual, 2f))
+                using (var projPen = new Pen(p.ChartProjection, 2f) { DashStyle = DashStyle.Dash })
+                using (var avgPen = new Pen(p.ChartAvg, 1.4f) { DashStyle = DashStyle.Dot })
                 {
                     var actualText = m.HasRealProgress ? I18n.T("ChartActual") : I18n.T("ChartEstimate");
                     lxx = DrawLegendItem(g, actualPen, actualText, labelFont, labelBrush, lxx, lyy);
@@ -296,12 +557,13 @@ namespace SolutionOperationMonitor
             Height = 228;
             BorderStyle = BorderStyle.FixedSingle;
             Margin = new Padding(4);
-            BackColor = Color.FromArgb(248, 250, 255);
+            BackColor = Theme.Current.CardBackground;
 
             _title = new Label
             {
                 Font = new Font(Font.FontFamily, 9.5f, FontStyle.Bold),
                 AutoSize = false,
+                ForeColor = Theme.Current.PrimaryText,
                 Location = new Point(8, 6),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
@@ -320,6 +582,7 @@ namespace SolutionOperationMonitor
             {
                 Font = new Font(Font.FontFamily, 10f, FontStyle.Bold),
                 AutoSize = false,
+                ForeColor = Theme.Current.PrimaryText,
                 TextAlign = ContentAlignment.MiddleRight,
                 Height = 20,
                 Width = 66,
@@ -329,6 +592,7 @@ namespace SolutionOperationMonitor
             _elapsed = new Label
             {
                 AutoSize = false,
+                ForeColor = Theme.Current.SecondaryText,
                 Location = new Point(8, 56),
                 Height = 18,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
@@ -366,6 +630,18 @@ namespace SolutionOperationMonitor
         public void SetChartData(ChartModel model)
         {
             _chart.SetModel(model);
+        }
+
+        public void ApplyTheme(ThemePalette p)
+        {
+            BackColor = p.CardBackground;
+            _title.ForeColor = p.PrimaryText;
+            _percent.ForeColor = p.PrimaryText;
+            _elapsed.ForeColor = p.SecondaryText;
+            // _eta.ForeColor wird pro Status in UpdateData() gesetzt (EtaGood/Warn/Neutral)
+            _chart.BackColor = p.ChartBackground;
+            _chart.Invalidate();
+            Invalidate();
         }
 
         public void UpdateData(string title, string percentText, int barValue, bool marquee,
@@ -406,6 +682,9 @@ namespace SolutionOperationMonitor
         private ToolStripLabel _lblFilterCaption;
         private ToolStripTextBox _txtFilter;
         private ToolStripDropDownButton _btnLanguage;
+        private ToolStripDropDownButton _btnTheme;
+        private ToolStripMenuItem _miThemeLight;
+        private ToolStripMenuItem _miThemeDark;
         private ToolStripLabel _lblLastRefresh;
 
         private SplitContainer _split;
@@ -438,8 +717,11 @@ namespace SolutionOperationMonitor
 
         public MonitorControl()
         {
+            Theme.Set(Theme.DetectSystem());
+
             BuildUi();
             ApplyTexts();
+            ApplyTheme();
 
             _timer = new Timer { Interval = 5000 };
             _timer.Tick += (s, e) =>
@@ -494,6 +776,13 @@ namespace SolutionOperationMonitor
             enItem.Click += (s, e) => SwitchLanguage(false, deItem, enItem);
             _btnLanguage.DropDownItems.AddRange(new ToolStripItem[] { deItem, enItem });
 
+            _btnTheme = new ToolStripDropDownButton { DisplayStyle = ToolStripItemDisplayStyle.Text };
+            _miThemeLight = new ToolStripMenuItem { Checked = Theme.Mode == ThemeMode.Light };
+            _miThemeDark = new ToolStripMenuItem { Checked = Theme.Mode == ThemeMode.Dark };
+            _miThemeLight.Click += (s, e) => SwitchTheme(ThemeMode.Light);
+            _miThemeDark.Click += (s, e) => SwitchTheme(ThemeMode.Dark);
+            _btnTheme.DropDownItems.AddRange(new ToolStripItem[] { _miThemeLight, _miThemeDark });
+
             _lblLastRefresh = new ToolStripLabel { Alignment = ToolStripItemAlignment.Right };
 
             _toolStrip.Items.AddRange(new ToolStripItem[]
@@ -510,6 +799,7 @@ namespace SolutionOperationMonitor
                 _txtFilter,
                 new ToolStripSeparator(),
                 _btnLanguage,
+                _btnTheme,
                 _lblLastRefresh
             });
 
@@ -612,6 +902,77 @@ namespace SolutionOperationMonitor
             }
         }
 
+        private void SwitchTheme(ThemeMode mode)
+        {
+            if (Theme.Mode == mode) return;
+            Theme.Set(mode);
+            ApplyTheme();
+        }
+
+        /// <summary>Wendet die aktive Palette auf alle Controls an. Läuft ohne aktive Verbindung.</summary>
+        private void ApplyTheme()
+        {
+            var p = Theme.Current;
+
+            BackColor = p.AppBackground;
+
+            // Toolbar
+            _toolStrip.Renderer = new ThemedToolStripRenderer(p);
+            _toolStrip.BackColor = p.ToolStripBackground;
+            _toolStrip.ForeColor = p.ToolStripText;
+            _cmbInterval.FlatStyle = FlatStyle.Flat;
+            _cmbInterval.BackColor = p.ToolStripBackground;
+            _cmbInterval.ForeColor = p.ToolStripText;
+            _txtFilter.BorderStyle = BorderStyle.FixedSingle;
+            _txtFilter.BackColor = p.GridCellBackground;
+            _txtFilter.ForeColor = p.PrimaryText;
+            _lblLastRefresh.ForeColor = p.SecondaryText;
+
+            if (_miThemeLight != null) _miThemeLight.Checked = Theme.Mode == ThemeMode.Light;
+            if (_miThemeDark != null) _miThemeDark.Checked = Theme.Mode == ThemeMode.Dark;
+
+            // Split + Header
+            _split.BackColor = p.PanelBackground;
+            _split.Panel1.BackColor = p.PanelBackground;
+            _split.Panel2.BackColor = p.PanelBackground;
+            _activeHeader.BackColor = p.PanelBackground;
+            _activeHeader.ForeColor = p.HeaderText;
+            _historyHeader.BackColor = p.PanelBackground;
+            _historyHeader.ForeColor = p.HeaderText;
+
+            // Aktive Vorgänge
+            _activePanel.BackColor = p.PanelBackground;
+            _lblNoActive.BackColor = p.PanelBackground;
+            _lblNoActive.ForeColor = p.MutedText;
+            foreach (var card in _activePanel.Controls.OfType<OperationCard>())
+            {
+                card.ApplyTheme(p);
+            }
+
+            ApplyGridTheme(p);
+
+            Invalidate(true);
+        }
+
+        private void ApplyGridTheme(ThemePalette p)
+        {
+            _grid.EnableHeadersVisualStyles = false;
+            _grid.BackgroundColor = p.GridBackground;
+            _grid.GridColor = p.GridLines;
+            _grid.DefaultCellStyle.BackColor = p.GridCellBackground;
+            _grid.DefaultCellStyle.ForeColor = p.GridCellText;
+            _grid.DefaultCellStyle.SelectionBackColor = p.GridSelectionBackground;
+            _grid.DefaultCellStyle.SelectionForeColor = p.GridSelectionText;
+            _grid.ColumnHeadersDefaultCellStyle.BackColor = p.GridHeaderBackground;
+            _grid.ColumnHeadersDefaultCellStyle.ForeColor = p.GridHeaderText;
+            _grid.ColumnHeadersDefaultCellStyle.SelectionBackColor = p.GridHeaderBackground;
+            _grid.ColumnHeadersDefaultCellStyle.SelectionForeColor = p.GridHeaderText;
+            _grid.RowHeadersDefaultCellStyle.BackColor = p.GridHeaderBackground;
+
+            // Bereits gebundene Zeilen neu einfärben (CellFormatting nutzt die neue Palette)
+            if (_grid.DataSource != null) _grid.Invalidate();
+        }
+
         private void ApplyTexts()
         {
             _btnClose.Text = I18n.T("Close");
@@ -620,6 +981,9 @@ namespace SolutionOperationMonitor
             _lblInterval.Text = I18n.T("Interval");
             _lblFilterCaption.Text = I18n.T("Filter");
             _btnLanguage.Text = I18n.T("Language");
+            _btnTheme.Text = I18n.T("Theme");
+            _miThemeLight.Text = I18n.T("ThemeLight");
+            _miThemeDark.Text = I18n.T("ThemeDark");
             _activeHeader.Text = I18n.T("ActiveHeader");
             _historyHeader.Text = I18n.T("HistoryHeader");
             _lblNoActive.Text = I18n.T("NoActive");
@@ -916,14 +1280,14 @@ namespace SolutionOperationMonitor
                     // Ehrlich sein statt einer immer weiter steigenden Fantasie-Restzeit
                     tracker.LastRemainingSeconds = null;
                     etaText = I18n.F("Stalled", progress.Value.ToString("0.#"));
-                    etaColor = Color.DarkOrange;
+                    etaColor = Theme.Current.EtaWarn;
                 }
                 else if (ratePerSecond.HasValue && ratePerSecond.Value > 0.005)
                 {
                     var rawRemaining = (100 - progress.Value) / ratePerSecond.Value;
                     var smoothed = SmoothRemaining(tracker, rawRemaining, data.UtcNow);
                     etaText = I18n.F("RemainingApprox", FormatDuration(TimeSpan.FromSeconds(smoothed)));
-                    etaColor = Color.DarkGreen;
+                    etaColor = Theme.Current.EtaGood;
                 }
                 else if (avgDuration.HasValue && elapsed.HasValue && avgDuration.Value > elapsed.Value)
                 {
@@ -931,13 +1295,13 @@ namespace SolutionOperationMonitor
                     etaText = I18n.F("EstFromHistory",
                         FormatDuration(TimeSpan.FromSeconds(smoothed)),
                         FormatDuration(avgDuration.Value));
-                    etaColor = Color.DarkOrange;
+                    etaColor = Theme.Current.EtaWarn;
                 }
                 else
                 {
                     tracker.LastRemainingSeconds = null;
                     etaText = I18n.T("Measuring");
-                    etaColor = Color.Gray;
+                    etaColor = Theme.Current.EtaNeutral;
                 }
             }
             else if (avgDuration.HasValue && elapsed.HasValue && avgDuration.Value.TotalSeconds > 0)
@@ -952,7 +1316,7 @@ namespace SolutionOperationMonitor
                     etaText = I18n.F("EstFromHistory",
                         FormatDuration(TimeSpan.FromSeconds(smoothed)),
                         FormatDuration(avgDuration.Value));
-                    etaColor = Color.DarkOrange;
+                    etaColor = Theme.Current.EtaWarn;
                 }
                 else
                 {
@@ -961,7 +1325,7 @@ namespace SolutionOperationMonitor
                     percentText = "– %";
                     tracker.LastRemainingSeconds = null;
                     etaText = I18n.F("LongerThanUsual", FormatDuration(avgDuration.Value));
-                    etaColor = Color.DarkOrange;
+                    etaColor = Theme.Current.EtaWarn;
                 }
             }
             else
@@ -971,7 +1335,7 @@ namespace SolutionOperationMonitor
                 percentText = "– %";
                 tracker.LastRemainingSeconds = null;
                 etaText = I18n.T("NoEstimate");
-                etaColor = Color.Gray;
+                etaColor = Theme.Current.EtaNeutral;
             }
 
             var title = name
@@ -1228,17 +1592,17 @@ namespace SolutionOperationMonitor
 
             if (endValue == null || endValue == DBNull.Value)
             {
-                row.DefaultCellStyle.BackColor = Color.FromArgb(255, 250, 220); // gelblich = aktiv
+                row.DefaultCellStyle.BackColor = Theme.Current.RowActive; // aktiv
             }
             else if (result.IndexOf("fail", StringComparison.OrdinalIgnoreCase) >= 0 ||
                      result.IndexOf("fehl", StringComparison.OrdinalIgnoreCase) >= 0 ||
                      result.IndexOf("error", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                row.DefaultCellStyle.BackColor = Color.FromArgb(255, 230, 230); // rötlich = Fehler
+                row.DefaultCellStyle.BackColor = Theme.Current.RowError; // Fehler
             }
             else
             {
-                row.DefaultCellStyle.BackColor = SystemColors.Window;
+                row.DefaultCellStyle.BackColor = Theme.Current.GridCellBackground;
             }
         }
 
