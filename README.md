@@ -1,112 +1,96 @@
-# Solution Operation Monitor (XrmToolBox Tool)
+# 🚀 Solution Operation Monitor
 
-Zeigt live den Status laufender Solution-Vorgänge (Import / Upgrade / Uninstall) in einer Dataverse-Umgebung – inkl. Fortschritt in %, verstrichener Zeit und geschätzter Restzeit – sowie die komplette Solution History auf einen Blick.
+**Watch solution import / upgrade / uninstall happen live in Microsoft Dataverse — progress %, ETA, a live chart and the full solution history at a glance.**
 
-## Features (v1.1.0)
+![Dataverse](https://img.shields.io/badge/Dataverse-Integration-blue)
+![XrmToolBox](https://img.shields.io/badge/XrmToolBox-Plugin-green)
+![Themes](https://img.shields.io/badge/Light%20%26%20Dark-mode-blueviolet)
 
-- **Light & Dark Mode**: Umschalter „Design“ in der Toolbar (Hell / Dunkel). Beim Start wird automatisch der Windows-App-Modus erkannt (`AppsUseLightTheme`), fällt bei fehlendem Registry-Zugriff auf Hell zurück. Alle Bereiche sind durchgängig eingefärbt: Toolbar/Menüs (eigener `ToolStripRenderer`), Karten, Fortschritts-Diagramm, History-Grid inkl. Kopf-, Auswahl- und Statusfarben (aktiv/Fehler). Der Wechsel ist ohne aktive Verbindung möglich und wirkt sofort auf bereits geladene Daten.
+---
 
-## Features (v1.2)
+## 🔍 Project description
 
-- **Zeitverlaufs-Diagramm pro aktivem Vorgang**: unter dem Fortschrittsbalken zeigt ein Mini-Chart
-  - die **Ist-Kurve** der echten Fortschritts-Messpunkte (blau),
-  - die **Prognose-Linie** bis 100 % auf Basis der aktuellen Rate (grün gestrichelt, mit ETA-Uhrzeit),
-  - die **Ø-Referenzlinie** aus der Historie (grau gepunktet) - läuft die Ist-Kurve flacher als die Referenz, ist der Vorgang langsamer als üblich,
-  - einen **"jetzt"-Marker** (orange).
-  Bei Uninstall/Upgrade ohne Plattform-Prozentwert wird der geschätzte Verlauf gestrichelt dargestellt.
+**Solution Operation Monitor** is an XrmToolBox tool that shows the **live status of running solution operations** (import / upgrade / uninstall) in a Microsoft Dataverse environment — including progress in %, elapsed time and estimated remaining time (ETA) — plus the **complete solution history** at a glance.
 
-## Features (v1.1)
+It helps developers and administrators **see exactly what a deployment is doing right now**, how long it will still take, and whether a run is progressing normally or is stuck — instead of staring at a spinner that never moves.
 
-- **Zweisprachig (DE/EN)**: Sprache wird automatisch aus Windows erkannt, Umschalter in der Toolbar
-- **Flackerfreie Live-Karten**: Karten werden pro Vorgang wiederverwendet und nur die Werte aktualisiert (kein Neuaufbau pro Refresh), Double-Buffering aktiv, Grid behält Scroll-Position und Auswahl
-- **Realistische ETA**: Restzeit basiert auf der gleitenden Fortschrittsrate der letzten 2 Minuten (nicht auf linearer Hochrechnung vom Start) + exponentielle Glättung gegen springende Werte. Wenn der Plattform-Fortschritt hängt (typisch: Import springt schnell auf ~90 % und verharrt dort), zeigt das Tool ehrlich "Fortschritt stockt" statt einer steigenden Restzeit
-- **Kein Fake-Prozentwert**: Ohne Vergleichsdaten in der Historie läuft der Balken im Marquee-Modus statt bei ~90 % festzuhängen
+---
 
-## Features (Basis)
+## ✨ Main functions
 
-- **Aktive Vorgänge live** (Auto-Refresh 5/10/30/60 s):
-  - Solution-Name, Version, Vorgang (Import/Upgrade/Uninstall) und Untervorgang
-  - Fortschrittsbalken + Prozentanzeige
-  - "Läuft seit" + geschätzte Restzeit (ETA)
-- **Solution History** (letzte 200 Vorgänge) als sortier- und filterbares Grid:
-  - Vorgang, Untervorgang, Status, Ergebnis, Start, Ende, Dauer, Fehlermeldung
-  - Laufende Vorgänge gelb, fehlgeschlagene rot markiert
-- **Benachrichtigung**, sobald ein laufender Vorgang abgeschlossen ist (inkl. Ergebnis)
+### 1. Live operations
+- Active import / upgrade / uninstall shown live (auto-refresh 3 / 5 / 10 / 30 / 60 s)
+- Solution name, version, operation and sub-operation
+- Progress bar + percentage, "running for" and estimated remaining time (ETA)
 
-## Wie der Fortschritt ermittelt wird
+### 2. Progress chart per operation
+- **Actual curve** of the real progress samples (blue)
+- **Projection line** to 100 % based on the current rate (green dashed, with ETA clock)
+- **Average reference line** from history (grey dotted) — a flatter actual curve means the run is slower than usual
+- **"now" marker** (orange)
 
-| Vorgang | Quelle | Genauigkeit |
+### 3. Realistic ETA
+- Remaining time is based on the sliding progress rate of the last 2 minutes (not a naive extrapolation from the start), with exponential smoothing against jumpy values
+- When the platform progress is stuck (typical: import jumps to ~90 % and stays there), the tool honestly shows **"progress stalled"** instead of an ever-growing fantasy ETA
+- No fake percentages: without comparable history the bar runs in marquee mode instead of freezing at ~90 %
+
+### 4. Solution history
+- Last 200 operations as a sortable and filterable grid
+- Operation, sub-operation, status, result, start, end, duration, error message
+- Running rows highlighted, failed rows flagged
+- **Completion notification** as soon as a running operation finishes (incl. result)
+
+### 5. Light & dark mode
+- "Theme" switch in the toolbar (light / dark), Windows app mode auto-detected on start
+- Consistently themed across toolbar, cards, chart and history grid
+- Switchable without an active connection and applied instantly
+
+### 6. Bilingual (EN / DE)
+- Language auto-detected from Windows, switchable in the toolbar
+
+---
+
+## 🎯 Possible applications
+
+| Role | Benefits |
+|-------------------|------------------------------------------------------|
+| 👨‍💻 Developers | See live how long a deployment still takes and whether it is stuck |
+| 🧑‍💼 Administrators | Monitor import / upgrade / uninstall and spot failed runs at a glance |
+| 📊 Project managers | Transparent status of solution deployments incl. full history |
+
+---
+
+## 📊 How progress is measured
+
+| Operation | Source | Accuracy |
 |---|---|---|
-| **Import** | `importjob.progress` (0–100 %, echter Plattform-Wert) | Exakt, ETA per linearer Extrapolation aus verstrichener Zeit |
-| **Upgrade / Uninstall** | Dataverse liefert hier **keinen Prozentwert**. Das Tool nimmt die Durchschnittsdauer der letzten (max. 5) gleichartigen Vorgänge derselben Solution aus `msdyn_solutionhistory` | Schätzung (orange markiert) |
-| **Historie** | `msdyn_solutionhistory` (Start-/Endzeit, Operation, Suboperation, Status, Ergebnis, Exception) | Exakt |
+| **Import** | `importjob.progress` (0–100 %, real platform value) | Exact, ETA from the measured rate |
+| **Upgrade / Uninstall** | Dataverse provides **no percentage** here. The tool uses the average duration of the last (max. 5) comparable operations of the same solution from `msdyn_solutionhistory` | Estimate (flagged orange) |
+| **History** | `msdyn_solutionhistory` (start/end time, operation, sub-operation, status, result, exception) | Exact |
 
-Wichtig zu wissen:
-- `msdyn_solutionhistory`-Einträge werden von der Plattform **nach 180 Tagen automatisch gelöscht** – älter reicht die Historie also nie zurück.
-- Optionset-Beschriftungen (Operation, Status, Ergebnis) werden **dynamisch über `FormattedValues`** aufgelöst statt hart codiert – dadurch keine Probleme mit abweichenden Werten je Version/Sprache.
-- Es werden ausschließlich **late-bound Entities** verwendet (Early Bound ist laut XrmToolBox-Doku in Tools verboten, weil es Konflikte mit anderen Tools erzeugt).
+> ℹ️ `msdyn_solutionhistory` entries are **deleted by the platform after 180 days**, so the history never reaches further back than that.
 
-## Projekt bauen
+---
 
-Voraussetzungen: Visual Studio 2019/2022, .NET Framework 4.8 Developer Pack.
+## ⚙️ Prerequisites
 
-Hinweis: Die Quelldateien sind UTF-8 (Umlaute!). Visual Studio kommt damit automatisch klar; bei manuellem Kompilieren `-codepage:utf8` verwenden.
+- A working **Microsoft Dataverse / Dynamics 365** environment
+- Installation of the **XrmToolBox** as the plugin platform
+- The connected user needs **read** access to:
+  - `msdyn_solutionhistory` (solution history)
+  - `importjob` (import job) — *optional*; without it everything works except the exact import percentage
 
-```
-git/Ordner öffnen -> SolutionOperationMonitor.csproj in Visual Studio öffnen
-NuGet-Restore läuft automatisch (Paket: XrmToolBoxPackage)
-Build (Debug oder Release)
-```
+---
 
-Das Projekt ist eine SDK-Style-csproj mit `net48` + `UseWindowsForms` – kein Designer-Gedöns, die komplette UI wird in `src/MonitorControl.cs` im Code aufgebaut. Der Quellcode liegt in `src/`, die Icons in `assets/` (SDK-Projekte globben `.cs`-Dateien automatisch rekursiv, keine weitere Konfiguration nötig).
+## 🧭 Roadmap / Ideas
 
-## Deployment / Testen
+- [x] Light & dark mode
+- [ ] "System" theme option that follows the Windows mode at runtime
+- [ ] Windows toast notification on completion
+- [ ] Per-component progress by parsing the `importjob.data` XML
 
-**Variante A – automatisch (Debug-Build):**
-Im csproj ist ein `AfterTargets="Build"`-Target enthalten, das die DLL bei jedem Debug-Build automatisch nach
-`%APPDATA%\MscrmTools\XrmToolBox\Plugins` kopiert. Danach XrmToolBox (neu) starten.
+---
 
-**Variante B – manuell:**
-`bin\Debug\SolutionOperationMonitor.dll` selbst in den Plugins-Ordner kopieren.
+## 📎 License
 
-**Debuggen:** In den Projekteigenschaften unter *Debug* als externes Programm `XrmToolBox.exe` eintragen, dann F5. (Siehe auch: https://www.xrmtoolbox.com/documentation/for-developers/debug/)
-
-## Benötigte Berechtigungen in Dataverse
-
-Der verbundene Benutzer braucht Leserechte auf:
-- `msdyn_solutionhistory` (Solution History)
-- `importjob` (Import Job) – optional; ohne diese Rechte funktioniert alles außer der exakten Import-Prozentanzeige
-
-## XrmToolBox Tool Library – Validierungs-Checkliste
-
-Der Stand gegenüber der offiziellen Checkliste (https://www.xrmtoolbox.com/documentation/for-users/tool-library/):
-
-**NuGet-Paket**
-
-| Punkt | Status | Umsetzung |
-|---|---|---|
-| Icon-URL | ✅ | `PackageIcon` (eingebettet) + `PackageIconUrl` in `SolutionOperationMonitor.csproj` |
-| Project-URL | ✅ | `PackageProjectUrl` in der `.csproj` |
-| Tool-DLL im Ordner `Plugins` | ✅ | `IncludeBuildOutput=false` + `None … PackagePath="Plugins"` – die DLL landet im Paket unter `Plugins/` |
-| Paket-Version == Tool-Version | ✅ | `Version=1.1.0` (.csproj) == `AssemblyVersion 1.1.0.0` (`src/AssemblyInfo.cs`) |
-
-> Hinweis: Der Paket-Tag **`XrmToolBox`** ist gesetzt – er ist Voraussetzung, damit die Tool Library das Paket überhaupt findet. Paket erzeugen mit `dotnet pack -c Release` (oder in Visual Studio „Pack“).
-
-**Tool**
-
-| Punkt | Status | Umsetzung |
-|---|---|---|
-| Bild für „Large“-Anzeige | ✅ | `BigImageBase64` (80×80) in `SolutionOperationMonitorPlugin.cs` |
-| Bild für „Small“-Anzeige | ✅ | `SmallImageBase64` (32×32) in `SolutionOperationMonitorPlugin.cs` |
-| Controls passen sich der Fenstergröße an | ✅ | `Dock`/`Anchor`, `SplitContainer`, `FlowLayoutPanel` + `Resize`-Handler skalieren Karten und Diagramm |
-| Tool ohne Verbindung öffenbar | ✅ | `PluginControlBase`; `OnLoad` lädt nur bei `Service != null` |
-| Controls ohne Verbindung nutzbar | ✅ | Design-/Sprach-/Filter-/Intervall-Controls arbeiten rein lokal, Auto-Refresh ist per `Service != null` abgesichert |
-| Verbindungsdialog bei verbindungspflichtigen Aktionen | ✅ | „Aktualisieren“ läuft über `ExecuteMethod(...)`, das bei fehlender Verbindung den Auswahldialog öffnet |
-| Controls mit Verbindung fehlerfrei | ✅ | Abfragen mit try/catch (z. B. `importjob` ohne Leserechte) |
-| Lang laufende Vorgänge asynchron | ✅ | `WorkAsync(...)` bzw. `Task.Run(...)` – die Haupt-App friert nicht ein |
-
-## Mögliche Erweiterungen
-
-- Windows-Toast-Notification bei Abschluss (XrmToolBox unterstützt das: `Use Windows Toast Notification` in der Doku)
-- Parsing der `importjob.data`-XML für Fortschritt **pro Komponente**
-- „System“-Option für automatisches Umschalten des Designs bei Änderung des Windows-Modus zur Laufzeit
+This project is licensed under the MIT license.
