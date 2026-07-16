@@ -392,11 +392,11 @@ namespace SolutionOperationMonitor
             using (var labelFont = new Font(Font.FontFamily, 7f))
             {
                 // Y-Grid: 0 / 25 / 50 / 75 / 100 %
-                for (int p = 0; p <= 100; p += 25)
+                for (int pc = 0; pc <= 100; pc += 25)
                 {
-                    var y = plot.Bottom - (float)(p / 100.0 * plot.Height);
-                    g.DrawLine(p == 0 ? axisPen : gridPen, plot.Left, y, plot.Right, y);
-                    if (p % 50 == 0)
+                    var y = plot.Bottom - (float)(pc / 100.0 * plot.Height);
+                    g.DrawLine(pc == 0 ? axisPen : gridPen, plot.Left, y, plot.Right, y);
+                    if (pc % 50 == 0)
                     {
                         g.DrawString(p + "%", labelFont, labelBrush, 2, y - 6);
                     }
