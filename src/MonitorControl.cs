@@ -1590,19 +1590,28 @@ namespace SolutionOperationMonitor
             var endValue = row.Cells["End"].Value;
             var result = (row.Cells["Result"].Value ?? "").ToString();
 
+            var p = Theme.Current;
+
+            // Text- und Auswahlfarben immer aus der Palette setzen. Sonst bleibt der Text
+            // in eingefärbten Zeilen auf der geerbten (dunklen) Farbe hängen und ist im
+            // Dark Mode nicht lesbar.
+            row.DefaultCellStyle.ForeColor = p.GridCellText;
+            row.DefaultCellStyle.SelectionBackColor = p.GridSelectionBackground;
+            row.DefaultCellStyle.SelectionForeColor = p.GridSelectionText;
+
             if (endValue == null || endValue == DBNull.Value)
             {
-                row.DefaultCellStyle.BackColor = Theme.Current.RowActive; // aktiv
+                row.DefaultCellStyle.BackColor = p.RowActive; // aktiv
             }
             else if (result.IndexOf("fail", StringComparison.OrdinalIgnoreCase) >= 0 ||
                      result.IndexOf("fehl", StringComparison.OrdinalIgnoreCase) >= 0 ||
                      result.IndexOf("error", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                row.DefaultCellStyle.BackColor = Theme.Current.RowError; // Fehler
+                row.DefaultCellStyle.BackColor = p.RowError; // Fehler
             }
             else
             {
-                row.DefaultCellStyle.BackColor = Theme.Current.GridCellBackground;
+                row.DefaultCellStyle.BackColor = p.GridCellBackground;
             }
         }
 
