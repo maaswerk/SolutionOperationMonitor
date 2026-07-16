@@ -17,7 +17,7 @@
     <Authors>Fabian Maas</Authors>
     <Company>Fabian Maas</Company>
     <Product>Solution Operation Monitor</Product>
-    <Description>Live progress monitoring for solution import / upgrade / uninstall including percentage, ETA, progress chart and the full solution history at a glance. Supports light and dark mode.</Description>
+    <Description>Live progress monitoring for solution import / upgrade / uninstall including percentage, ETA, progress chart and the full solution history at a glance. Supports light and dark mode. This project is licensed under the MIT license.</Description>
     <Copyright>Copyright © 2026 Fabian Maas</Copyright>
     <!-- Der Tag "XrmToolBox" ist Voraussetzung, damit die Tool Library das Paket findet -->
     <PackageTags>XrmToolBox;Dataverse;Dynamics365;PowerPlatform;Solution;Import;Upgrade;Monitoring</PackageTags>
@@ -28,6 +28,7 @@
     <PackageIcon>icon-80.png</PackageIcon>
     <PackageIconUrl>https://raw.githubusercontent.com/maaswerk/solutionoperationmonitor/main/assets/icon-80.png</PackageIconUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <!-- NU5048: PackageIcon + PackageIconUrl gleichzeitig ist gewollt (Rückwärtskompatibilität) -->
     <NoWarn>$(NoWarn);NU5048</NoWarn>
 
