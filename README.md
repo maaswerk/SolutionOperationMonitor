@@ -22,6 +22,8 @@ It helps developers and administrators **see exactly what a deployment is doing 
 - Active import / upgrade / uninstall shown live (auto-refresh 3 / 5 / 10 / 30 / 60 s)
 - Solution name, version, operation and sub-operation
 - Progress bar + percentage, "running for" and estimated remaining time (ETA)
+- Precise timing: elapsed time plus the **time range** — start clock and the projected **target time** (`Started 14:03:11 → target ~14:11`)
+- For imports: **per-component breakdown** parsed from the import job data (processed count · ok · warnings · errors)
 
 ### 2. Progress chart per operation
 - **Actual curve** of the real progress samples (blue)
@@ -85,9 +87,9 @@ It helps developers and administrators **see exactly what a deployment is doing 
 ## 🧭 Roadmap / Ideas
 
 - [x] Light & dark mode
+- [x] Per-component progress by parsing the `importjob.data` XML
 - [ ] "System" theme option that follows the Windows mode at runtime
 - [ ] Windows toast notification on completion
-- [ ] Per-component progress by parsing the `importjob.data` XML
 
 ---
 

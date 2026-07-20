@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Linq;
 using Microsoft.Win32;
 using Microsoft.Xrm.Sdk;
 using Microsoft.Xrm.Sdk.Query;
@@ -44,6 +45,11 @@ namespace SolutionOperationMonitor
             { "AutoFailed",       new[] { "Auto-Refresh fehlgeschlagen: {0}", "Auto refresh failed: {0}" } },
             { "RunningSince",     new[] { "Läuft seit: {0}", "Running for: {0}" } },
             { "StartAt",          new[] { "Start: {0}", "Started: {0}" } },
+            { "TimeRange",        new[] { "Start {0} → Ziel ca. {1}", "Started {0} → target ~{1}" } },
+            { "CompProcessed",    new[] { "Komponenten: {0} verarbeitet", "Components: {0} processed" } },
+            { "CompOk",           new[] { "{0} ok", "{0} ok" } },
+            { "CompWarn",         new[] { "{0} Warnung(en)", "{0} warning(s)" } },
+            { "CompErr",          new[] { "{0} Fehler", "{0} error(s)" } },
             { "RemainingApprox",  new[] { "Restzeit ca. {0}", "Approx. {0} remaining" } },
             { "EstFromHistory",   new[] { "Restzeit ca. {0} (geschätzt aus Historie, Ø {1})", "Approx. {0} remaining (estimated from history, Ø {1})" } },
             { "LongerThanUsual",  new[] { "Dauert länger als üblich (Ø {0})", "Taking longer than usual (Ø {0})" } },
@@ -547,6 +553,7 @@ namespace SolutionOperationMonitor
         private readonly Label _percent;
         private readonly Label _elapsed;
         private readonly Label _eta;
+        private readonly Label _components;
         private readonly ProgressChart _chart;
 
         public OperationCard(Guid operationId)
@@ -554,7 +561,7 @@ namespace SolutionOperationMonitor
             OperationId = operationId;
             DoubleBuffered = true;
 
-            Height = 228;
+            Height = 246;
             BorderStyle = BorderStyle.FixedSingle;
             Margin = new Padding(4);
             BackColor = Theme.Current.CardBackground;
@@ -606,13 +613,22 @@ namespace SolutionOperationMonitor
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
 
+            _components = new Label
+            {
+                AutoSize = false,
+                ForeColor = Theme.Current.SecondaryText,
+                Location = new Point(8, 98),
+                Height = 18,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+
             _chart = new ProgressChart
             {
-                Location = new Point(8, 100),
+                Location = new Point(8, 120),
                 Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right
             };
 
-            Controls.AddRange(new Control[] { _title, _bar, _percent, _elapsed, _eta, _chart });
+            Controls.AddRange(new Control[] { _title, _bar, _percent, _elapsed, _eta, _components, _chart });
             Resize += (s, e) => LayoutChildren();
             LayoutChildren();
         }
@@ -624,7 +640,8 @@ namespace SolutionOperationMonitor
             _percent.Location = new Point(Width - 76, 30);
             _elapsed.Size = new Size(Width - 16, 18);
             _eta.Size = new Size(Width - 16, 18);
-            _chart.Size = new Size(Width - 16, Math.Max(40, Height - 108));
+            _components.Size = new Size(Width - 16, 18);
+            _chart.Size = new Size(Width - 16, Math.Max(40, Height - 128));
         }
 
         public void SetChartData(ChartModel model)
@@ -638,6 +655,7 @@ namespace SolutionOperationMonitor
             _title.ForeColor = p.PrimaryText;
             _percent.ForeColor = p.PrimaryText;
             _elapsed.ForeColor = p.SecondaryText;
+            _components.ForeColor = p.SecondaryText;
             // _eta.ForeColor wird pro Status in UpdateData() gesetzt (EtaGood/Warn/Neutral)
             _chart.BackColor = p.ChartBackground;
             _chart.Invalidate();
@@ -645,7 +663,7 @@ namespace SolutionOperationMonitor
         }
 
         public void UpdateData(string title, string percentText, int barValue, bool marquee,
-            string elapsedText, string etaText, Color etaColor)
+            string elapsedText, string etaText, Color etaColor, string componentsText)
         {
             // Nur bei tatsächlicher Änderung setzen -> kein unnötiges Repaint
             if (_title.Text != title) _title.Text = title;
@@ -653,6 +671,8 @@ namespace SolutionOperationMonitor
             if (_elapsed.Text != elapsedText) _elapsed.Text = elapsedText;
             if (_eta.Text != etaText) _eta.Text = etaText;
             if (_eta.ForeColor != etaColor) _eta.ForeColor = etaColor;
+            var comp = componentsText ?? "";
+            if (_components.Text != comp) _components.Text = comp;
 
             if (marquee)
             {
@@ -1132,7 +1152,7 @@ namespace SolutionOperationMonitor
             // 2) Aktive Import-Jobs (liefern den echten Prozentwert beim Import)
             var jobQuery = new QueryExpression("importjob")
             {
-                ColumnSet = new ColumnSet("importjobid", "solutionname", "progress", "startedon", "completedon", "modifiedon"),
+                ColumnSet = new ColumnSet("importjobid", "solutionname", "progress", "startedon", "completedon", "modifiedon", "data"),
                 TopCount = 20
             };
             jobQuery.Criteria.AddCondition("completedon", ConditionOperator.Null);
@@ -1233,7 +1253,11 @@ namespace SolutionOperationMonitor
                 if (elapsed.Value < TimeSpan.Zero) elapsed = TimeSpan.Zero;
             }
 
-            double? progress = FindImportJobProgress(name, data.ActiveImportJobs);
+            var importJob = FindImportJob(name, data.ActiveImportJobs);
+            double? progress = importJob == null ? (double?)null : importJob.GetAttributeValue<double?>("progress");
+            var components = importJob == null ? null : ParseImportJobData(importJob.GetAttributeValue<string>("data"));
+            string componentsText = FormatComponents(components);
+
             TimeSpan? avgDuration = GetAverageDuration(data.History, name, operation, op.Id);
 
             // Messpunkte sammeln (für ratenbasierte ETA)
@@ -1343,13 +1367,29 @@ namespace SolutionOperationMonitor
                 + "  –  " + operation
                 + (string.IsNullOrEmpty(subOperation) ? "" : " / " + subOperation);
 
-            var elapsedText = I18n.F("RunningSince",
-                elapsed.HasValue ? FormatDuration(elapsed.Value) : I18n.T("Unknown"))
-                + (start.HasValue
-                    ? "   (" + I18n.F("StartAt", start.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")) + ")"
-                    : "");
+            // Zeitraum: Start-Uhrzeit und - wenn eine Restzeit bekannt ist - die voraussichtliche
+            // Ziel-Uhrzeit (Start -> Ziel). Ohne Restzeit-Schätzung nur das Startdatum.
+            string rangeSuffix = "";
+            if (start.HasValue)
+            {
+                if (tracker.LastRemainingSeconds.HasValue)
+                {
+                    var target = DateTime.Now.AddSeconds(tracker.LastRemainingSeconds.Value);
+                    rangeSuffix = "   (" + I18n.F("TimeRange",
+                        start.Value.ToLocalTime().ToString("HH:mm:ss"),
+                        target.ToString("HH:mm")) + ")";
+                }
+                else
+                {
+                    rangeSuffix = "   (" + I18n.F("StartAt",
+                        start.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")) + ")";
+                }
+            }
 
-            card.UpdateData(title, percentText, barValue, marquee, elapsedText, etaText, etaColor);
+            var elapsedText = I18n.F("RunningSince",
+                elapsed.HasValue ? FormatDuration(elapsed.Value) : I18n.T("Unknown")) + rangeSuffix;
+
+            card.UpdateData(title, percentText, barValue, marquee, elapsedText, etaText, etaColor, componentsText);
 
             // Diagramm-Daten: Ist-Kurve, Prognose, Ø-Referenz, "jetzt"- und ETA-Marker
             var chart = new ChartModel
@@ -1427,17 +1467,83 @@ namespace SolutionOperationMonitor
             return Math.Max(0, smoothed);
         }
 
-        private static double? FindImportJobProgress(string solutionName, List<Entity> jobs)
+        private static Entity FindImportJob(string solutionName, List<Entity> jobs)
         {
             if (string.IsNullOrEmpty(solutionName) || jobs == null || jobs.Count == 0) return null;
 
-            var match = jobs
+            return jobs
                 .Where(j => string.Equals(j.GetAttributeValue<string>("solutionname"), solutionName,
                     StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(j => j.GetAttributeValue<DateTime?>("startedon") ?? DateTime.MinValue)
                 .FirstOrDefault();
+        }
 
-            return match == null ? (double?)null : match.GetAttributeValue<double?>("progress");
+        // Per-Komponenten-Fortschritt aus der importjob.data-XML.
+        private class ComponentProgress
+        {
+            public int Processed;
+            public int Succeeded;
+            public int Warnings;
+            public int Failed;
+        }
+
+        /// <summary>
+        /// Wertet die (während des Imports fortlaufend gefüllte) importjob.data-XML aus und zählt
+        /// die pro Komponente eingetragenen &lt;result&gt;-Elemente nach ihrem Ergebnis. Rein additive,
+        /// vollständig abgesicherte Auswertung: Bei unbekanntem/unvollständigem XML wird null geliefert
+        /// und das restliche Tool läuft unverändert weiter.
+        /// </summary>
+        private static ComponentProgress ParseImportJobData(string xml)
+        {
+            if (string.IsNullOrEmpty(xml)) return null;
+
+            try
+            {
+                var doc = XDocument.Parse(xml);
+
+                // Pro Komponente trägt der Import ein <result result="success|warning|failure" .../> ein.
+                // Die zusammenfassenden Knoten unter <results> (Plural) übergehen wir.
+                var results = doc.Descendants()
+                    .Where(r => r.Name.LocalName == "result"
+                             && r.Attribute("result") != null
+                             && (r.Parent == null || r.Parent.Name.LocalName != "results"))
+                    .ToList();
+                if (results.Count == 0) return null;
+
+                var cp = new ComponentProgress();
+                foreach (var r in results)
+                {
+                    var res = ((string)r.Attribute("result") ?? "").Trim();
+                    cp.Processed++;
+
+                    if (res.Equals("success", StringComparison.OrdinalIgnoreCase))
+                        cp.Succeeded++;
+                    else if (res.Equals("warning", StringComparison.OrdinalIgnoreCase))
+                        cp.Warnings++;
+                    else if (res.Equals("failure", StringComparison.OrdinalIgnoreCase) ||
+                             res.Equals("error", StringComparison.OrdinalIgnoreCase))
+                        cp.Failed++;
+                }
+
+                return cp;
+            }
+            catch
+            {
+                // Schema unbekannt / XML noch unvollständig -> Feature still deaktivieren
+                return null;
+            }
+        }
+
+        private static string FormatComponents(ComponentProgress cp)
+        {
+            if (cp == null || cp.Processed == 0) return "";
+
+            var detail = new List<string> { I18n.F("CompOk", cp.Succeeded) };
+            if (cp.Warnings > 0) detail.Add(I18n.F("CompWarn", cp.Warnings));
+            if (cp.Failed > 0) detail.Add(I18n.F("CompErr", cp.Failed));
+
+            var prefix = cp.Failed > 0 ? "⚠ " : "";
+            return prefix + I18n.F("CompProcessed", cp.Processed) + " (" + string.Join(" · ", detail) + ")";
         }
 
         private static TimeSpan? GetAverageDuration(List<Entity> history, string solutionName, string operation, Guid excludeId)
@@ -1590,19 +1696,28 @@ namespace SolutionOperationMonitor
             var endValue = row.Cells["End"].Value;
             var result = (row.Cells["Result"].Value ?? "").ToString();
 
+            var p = Theme.Current;
+
+            // Text- und Auswahlfarben immer aus der Palette setzen. Sonst bleibt der Text
+            // in eingefärbten Zeilen auf der geerbten (dunklen) Farbe hängen und ist im
+            // Dark Mode nicht lesbar.
+            row.DefaultCellStyle.ForeColor = p.GridCellText;
+            row.DefaultCellStyle.SelectionBackColor = p.GridSelectionBackground;
+            row.DefaultCellStyle.SelectionForeColor = p.GridSelectionText;
+
             if (endValue == null || endValue == DBNull.Value)
             {
-                row.DefaultCellStyle.BackColor = Theme.Current.RowActive; // aktiv
+                row.DefaultCellStyle.BackColor = p.RowActive; // aktiv
             }
             else if (result.IndexOf("fail", StringComparison.OrdinalIgnoreCase) >= 0 ||
                      result.IndexOf("fehl", StringComparison.OrdinalIgnoreCase) >= 0 ||
                      result.IndexOf("error", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                row.DefaultCellStyle.BackColor = Theme.Current.RowError; // Fehler
+                row.DefaultCellStyle.BackColor = p.RowError; // Fehler
             }
             else
             {
-                row.DefaultCellStyle.BackColor = Theme.Current.GridCellBackground;
+                row.DefaultCellStyle.BackColor = p.GridCellBackground;
             }
         }
 
