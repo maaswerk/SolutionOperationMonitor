@@ -13,7 +13,7 @@
     <!-- ================= NuGet-Paket-Metadaten (XrmToolBox Tool Library) ================= -->
     <PackageId>SolutionOperationMonitor</PackageId>
     <!-- Paket-Version = Tool-Version (siehe AssemblyVersion in src/AssemblyInfo.cs) -->
-    <Version>1.1.0</Version>
+    <Version>1.2.0</Version>
     <Authors>Fabian Maas</Authors>
     <Company>Fabian Maas</Company>
     <Product>Solution Operation Monitor</Product>
@@ -24,12 +24,14 @@
     <PackageProjectUrl>https://github.com/maaswerk/solutionoperationmonitor</PackageProjectUrl>
     <RepositoryUrl>https://github.com/maaswerk/solutionoperationmonitor</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <!-- Icon: eingebettet (modernes NuGet) + URL (von der Tool-Library-Validierung geprüft) -->
-    <PackageIcon>icon-80.png</PackageIcon>
+    <!-- Nur externe Icon-URL, kein eingebettetes Icon: NuGet.org überschreibt die iconUrl in seiner API
+         sonst mit einem eigenen Endpunkt, der als "application/octet-stream" statt "image/png" ausgeliefert
+         wird - das lässt die XrmToolBox-Tool-Library-Validierung fehlschlagen ("Logo Url is not valid"). -->
     <PackageIconUrl>https://raw.githubusercontent.com/maaswerk/solutionoperationmonitor/main/assets/icon-80.png</PackageIconUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <!-- NU5048: PackageIcon + PackageIconUrl gleichzeitig ist gewollt (Rückwärtskompatibilität) -->
+    <!-- NU5048: PackageIconUrl ist offiziell veraltet, wird hier aber bewusst statt PackageIcon verwendet
+         (siehe Kommentar oben) -->
     <NoWarn>$(NoWarn);NU5048</NoWarn>
 
     <!-- Die Tool-DLL muss im Paket unter "Plugins" liegen -> Standard-Build-Output (lib) unterdrücken -->
@@ -46,8 +48,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Paket-Icon und README ins Paket-Root aufnehmen -->
-    <None Include="assets\icon-80.png" Pack="true" PackagePath="" Visible="false" />
+    <!-- README ins Paket-Root aufnehmen (Icon wird nur über PackageIconUrl referenziert, nicht eingebettet) -->
     <None Include="README.md" Pack="true" PackagePath="" Visible="false" />
     <!-- Gebaute Tool-DLL unter "Plugins" ins NuGet-Paket legen (Tool-Library-Vorgabe) -->
     <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="Plugins" Visible="false" />

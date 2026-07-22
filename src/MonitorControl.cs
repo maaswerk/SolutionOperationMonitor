@@ -404,7 +404,7 @@ namespace SolutionOperationMonitor
                     g.DrawLine(pc == 0 ? axisPen : gridPen, plot.Left, y, plot.Right, y);
                     if (pc % 50 == 0)
                     {
-                        g.DrawString(p + "%", labelFont, labelBrush, 2, y - 6);
+                        g.DrawString(pc + "%", labelFont, labelBrush, 2, y - 6);
                     }
                 }
                 g.DrawLine(axisPen, plot.Left, plot.Top, plot.Left, plot.Bottom);
