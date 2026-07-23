@@ -1,0 +1,62 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>SolutionOperationMonitor</RootNamespace>
+    <AssemblyName>SolutionOperationMonitor</AssemblyName>
+
+    <!-- Assembly-Version wird ausschließlich in src/AssemblyInfo.cs gepflegt -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+
+    <!-- ================= NuGet-Paket-Metadaten (XrmToolBox Tool Library) ================= -->
+    <PackageId>SolutionOperationMonitor</PackageId>
+    <!-- Paket-Version = Tool-Version (siehe AssemblyVersion in src/AssemblyInfo.cs) -->
+    <Version>1.3.1.0</Version>
+    <Authors>Fabian Maas</Authors>
+    <Company>Fabian Maas</Company>
+    <Product>Solution Operation Monitor</Product>
+    <Description>Live progress monitoring for solution import / upgrade / uninstall including percentage, ETA, progress chart and the full solution history at a glance. Supports light and dark mode. This project is licensed under the MIT license.</Description>
+    <Copyright>Copyright © 2026 Fabian Maas</Copyright>
+    <!-- Der Tag "XrmToolBox" ist Voraussetzung, damit die Tool Library das Paket findet -->
+    <PackageTags>XrmToolBox;Dataverse;Dynamics365;PowerPlatform;Solution;Import;Upgrade;Monitoring</PackageTags>
+    <PackageProjectUrl>https://github.com/maaswerk/solutionoperationmonitor</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/maaswerk/solutionoperationmonitor</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <!-- Nur externe Icon-URL, kein eingebettetes Icon: NuGet.org überschreibt die iconUrl in seiner API
+         sonst mit einem eigenen Endpunkt, der als "application/octet-stream" statt "image/png" ausgeliefert
+         wird - das lässt die XrmToolBox-Tool-Library-Validierung fehlschlagen ("Logo Url is not valid"). -->
+    <PackageIconUrl>https://raw.githubusercontent.com/maaswerk/solutionoperationmonitor/main/assets/icon-80.png</PackageIconUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- NU5048: PackageIconUrl ist offiziell veraltet, wird hier aber bewusst statt PackageIcon verwendet
+         (siehe Kommentar oben) -->
+    <NoWarn>$(NoWarn);NU5048</NoWarn>
+
+    <!-- Die Tool-DLL muss im Paket unter "Plugins" liegen -> Standard-Build-Output (lib) unterdrücken -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+
+    <!-- Erlaubt das Bauen auf Nicht-Windows-Maschinen (CI); in Visual Studio irrelevant -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Bringt XrmToolBox.Extensibility, McTools.Xrm.Connection und die Dataverse SDK Assemblies mit -->
+    <PackageReference Include="XrmToolBoxPackage" Version="1.2024.12.70" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- README ins Paket-Root aufnehmen (Icon wird nur über PackageIconUrl referenziert, nicht eingebettet) -->
+    <None Include="README.md" Pack="true" PackagePath="" Visible="false" />
+    <!-- Gebaute Tool-DLL unter "Plugins" ins NuGet-Paket legen (Tool-Library-Vorgabe) -->
+    <None Include="$(OutputPath)$(AssemblyName).dll" Pack="true" PackagePath="Plugins" Visible="false" />
+  </ItemGroup>
+
+  <!-- Optional: DLL nach dem Build direkt in den XrmToolBox-Plugin-Ordner kopieren (nur Debug) -->
+  <Target Name="CopyToXrmToolBox" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' AND '$(OS)' == 'Windows_NT'">
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(APPDATA)\MscrmTools\XrmToolBox\Plugins" ContinueOnError="true" />
+  </Target>
+
+</Project>
