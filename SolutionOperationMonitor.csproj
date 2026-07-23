@@ -13,7 +13,7 @@
     <!-- ================= NuGet-Paket-Metadaten (XrmToolBox Tool Library) ================= -->
     <PackageId>SolutionOperationMonitor</PackageId>
     <!-- Paket-Version = Tool-Version (siehe AssemblyVersion in src/AssemblyInfo.cs) -->
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
     <Authors>Fabian Maas</Authors>
     <Company>Fabian Maas</Company>
     <Product>Solution Operation Monitor</Product>
@@ -56,9 +56,7 @@
 
   <!-- Optional: DLL nach dem Build direkt in den XrmToolBox-Plugin-Ordner kopieren (nur Debug) -->
   <Target Name="CopyToXrmToolBox" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug' AND '$(OS)' == 'Windows_NT'">
-    <Copy SourceFiles="$(TargetPath)"
-          DestinationFolder="$(APPDATA)\MscrmTools\XrmToolBox\Plugins"
-          ContinueOnError="true" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(APPDATA)\MscrmTools\XrmToolBox\Plugins" ContinueOnError="true" />
   </Target>
 
 </Project>
