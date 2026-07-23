@@ -1,0 +1,84 @@
+name: Publish NuGet Package
+
+# Läuft, wenn ein Versions-Tag (z. B. "1.3.0") gepusht wird.
+# Das Paket wird mit der Version aus SolutionOperationMonitor.csproj gebaut -
+# der Tag muss exakt dieser Version entsprechen (siehe Validierungsschritt unten).
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag (must be on main and match project version)
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Tag '$TAG' ist kein gültiger Versions-Tag (erwartet z. B. 1.3.0)."
+            exit 1
+          fi
+
+          if ! git branch -r --contains "$GITHUB_SHA" | grep -q 'origin/main'; then
+            echo "::error::Tag '$TAG' zeigt auf keinen Commit auf 'main'."
+            exit 1
+          fi
+
+          PROJECT_VERSION=$(grep -oP '(?<=<Version>)[^<]+' SolutionOperationMonitor.csproj)
+          if [[ "$VERSION" != "$PROJECT_VERSION" ]]; then
+            echo "::error::Tag-Version '$VERSION' stimmt nicht mit <Version> in SolutionOperationMonitor.csproj ('$PROJECT_VERSION') überein."
+            exit 1
+          fi
+
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build -c Release --no-restore
+
+      - name: Generate release notes
+        id: notes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data } = await github.rest.repos.generateReleaseNotes({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: process.env.GITHUB_REF_NAME
+            });
+            core.setOutput('body', data.body);
+
+      - name: Pack
+        env:
+          PackageReleaseNotes: ${{ steps.notes.outputs.body }}
+        run: dotnet pack -c Release --no-build -o out
+
+      - name: Push to NuGet.org
+        run: dotnet nuget push "out/*.nupkg" --source https://api.nuget.org/v3/index.json --api-key "${{ secrets.NUGET_API_KEY }}" --skip-duplicate
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: v${{ env.VERSION }}
+          body: ${{ steps.notes.outputs.body }}
+          files: out/*.nupkg
